@@ -1,0 +1,40 @@
+{
+  "name": "universal-fs-router",
+  "version": "0.0.1",
+  "private": true,
+  "description": "File-based routing for all JS/TS runtimes and frameworks",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "test:express": "pnpm --filter test-express dev",
+    "test:hono": "pnpm --filter test-hono dev",
+    "test:fastify": "pnpm --filter test-fastify dev",
+    "test:koa": "pnpm --filter test-koa dev",
+    "semantic-release": "semantic-release"
+  },
+  "keywords": [
+    "routing",
+    "file-based",
+    "hono",
+    "express",
+    "fastify",
+    "koa"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.1",
+    "@semantic-release/npm": "^13.1.1",
+    "semantic-release": "^25.0.1",
+    "typescript": "^5.7.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "is-generator-function": "1.0.10"
+    }
+  }
+}
