@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { createHonoRouter } from 'fs-router/hono';
+import { createHonoRouter } from '@sib61/fs-router-hono';
 
 const app = new Hono();
 

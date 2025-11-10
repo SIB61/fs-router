@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import { createFastifyRouter } from 'fs-router/fastify';
+import { createFastifyRouter } from '@sib61/fs-router-fastify';
 
 const fastify = Fastify();
 

@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import Router from '@koa/router';
-import { createKoaRouter } from 'fs-router/koa';
+import { createKoaRouter } from '@sib61/fs-router-koa';
 
 const app = new Koa();
 const router = new Router();

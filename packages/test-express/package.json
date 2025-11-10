@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "test": "tsx src/index.ts",
+    "test": "echo 'Test app - run with pnpm dev'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "express": "^4.21.2",
-    "fs-router": "workspace:*"
+    "@fs-router/express": "workspace:*"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

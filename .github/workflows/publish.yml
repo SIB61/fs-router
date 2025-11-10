@@ -28,11 +28,6 @@ jobs:
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
       - name: Install dependencies
         run: pnpm install
 
@@ -48,12 +43,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to JSR
-        if: steps.semantic.outputs.new_release_published == 'true'
-        run: |
-          cd packages/fs-router
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          deno publish --allow-dirty
-        env:
-          DENO_DEPLOY_TOKEN: ${{ secrets.JSR_TOKEN }}

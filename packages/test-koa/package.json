@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "test": "tsx src/index.ts",
+    "test": "echo 'Test app - run with pnpm dev'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@koa/router": "^13.1.0",
-    "fs-router": "workspace:*",
+    "@fs-router/koa": "workspace:*",
     "is-generator-function": "^1.0.10",
     "koa": "^2.16.0"
   },

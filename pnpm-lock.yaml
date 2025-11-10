@@ -75,14 +75,132 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.18.13)
 
-  packages/test-express:
+  packages/fs-router-core:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.18.13
+      '@vitest/coverage-v8':
+        specifier: ^2.1.8
+        version: 2.1.9(vitest@2.1.9(@types/node@22.18.13))
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.0(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.18.13)
+
+  packages/fs-router-express:
     dependencies:
+      '@sib61/fs-router-core':
+        specifier: workspace:*
+        version: link:../fs-router-core
+    devDependencies:
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.18.13
       express:
         specifier: ^4.21.2
         version: 4.21.2
-      fs-router:
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.0(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.18.13)
+
+  packages/fs-router-fastify:
+    dependencies:
+      '@sib61/fs-router-core':
         specifier: workspace:*
-        version: link:../fs-router
+        version: link:../fs-router-core
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.18.13
+      fastify:
+        specifier: ^5.2.2
+        version: 5.6.1
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.0(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.18.13)
+
+  packages/fs-router-hono:
+    dependencies:
+      '@sib61/fs-router-core':
+        specifier: workspace:*
+        version: link:../fs-router-core
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.18.13
+      hono:
+        specifier: ^4.6.14
+        version: 4.10.4
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.0(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.18.13)
+
+  packages/fs-router-koa:
+    dependencies:
+      '@sib61/fs-router-core':
+        specifier: workspace:*
+        version: link:../fs-router-core
+    devDependencies:
+      '@koa/router':
+        specifier: ^13.1.0
+        version: 13.1.1
+      '@types/koa':
+        specifier: ^2.15.0
+        version: 2.15.0
+      '@types/koa__router':
+        specifier: ^12.0.5
+        version: 12.0.5
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.18.13
+      koa:
+        specifier: ^2.15.3
+        version: 2.16.3
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.0(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.18.13)
+
+  packages/test-express:
+    dependencies:
+      '@sib61/fs-router-express':
+        specifier: workspace:*
+        version: link:../fs-router-express
+      express:
+        specifier: ^4.21.2
+        version: 4.21.2
     devDependencies:
       '@types/express':
         specifier: ^4.17.21
@@ -99,12 +217,12 @@ importers:
 
   packages/test-fastify:
     dependencies:
+      '@sib61/fs-router-fastify':
+        specifier: workspace:*
+        version: link:../fs-router-fastify
       fastify:
         specifier: ^5.2.2
         version: 5.6.1
-      fs-router:
-        specifier: workspace:*
-        version: link:../fs-router
     devDependencies:
       '@types/node':
         specifier: ^22.10.5
@@ -121,9 +239,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.19.5
         version: 1.19.6(hono@4.10.4)
-      fs-router:
+      '@sib61/fs-router-hono':
         specifier: workspace:*
-        version: link:../fs-router
+        version: link:../fs-router-hono
       hono:
         specifier: ^4.6.14
         version: 4.10.4
@@ -143,9 +261,9 @@ importers:
       '@koa/router':
         specifier: ^13.1.0
         version: 13.1.1
-      fs-router:
+      '@sib61/fs-router-koa':
         specifier: workspace:*
-        version: link:../fs-router
+        version: link:../fs-router-koa
       is-generator-function:
         specifier: 1.0.10
         version: 1.0.10
