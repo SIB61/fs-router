@@ -37,12 +37,10 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Version bump
+        run: pnpm -r exec npm version patch
+
       - name: Publish to NPM
-        run: |
-          cd packages/fs-router-core && npm publish
-          cd ../fs-router-express && npm publish
-          cd ../fs-router-fastify && npm publish
-          cd ../fs-router-hono && npm publish
-          cd ../fs-router-koa && npm publish
+        run: pnpm -r publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
