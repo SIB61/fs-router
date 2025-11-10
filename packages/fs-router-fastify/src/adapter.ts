@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { FrameworkAdapter } from '@sib61/fs-router-core';
+import type { FrameworkAdapter } from '@fs-router/core';
 
 export class FastifyAdapter implements FrameworkAdapter<FastifyInstance> {
   constructor(private app: FastifyInstance) {}

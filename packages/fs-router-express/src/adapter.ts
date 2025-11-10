@@ -1,5 +1,5 @@
 import type { Application } from 'express';
-import type { FrameworkAdapter } from '@sib61/fs-router-core';
+import type { FrameworkAdapter } from '@fs-router/core';
 
 export class ExpressAdapter implements FrameworkAdapter<Application> {
   constructor(private app: Application) {}

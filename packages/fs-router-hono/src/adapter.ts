@@ -1,5 +1,5 @@
 import type { Hono } from 'hono';
-import type { FrameworkAdapter } from '@sib61/fs-router-core';
+import type { FrameworkAdapter } from '@fs-router/core';
 
 export class HonoAdapter implements FrameworkAdapter<Hono> {
   constructor(private app: Hono) {}

@@ -1,6 +1,6 @@
 import type Router from '@koa/router';
-import type { RouterOptions } from '@sib61/fs-router-core';
-import { createRouter } from '@sib61/fs-router-core';
+import type { RouterOptions } from '@fs-router/core';
+import { createRouter } from '@fs-router/core';
 import { KoaAdapter } from './adapter.js';
 
 export async function createKoaRouter(router: Router, options: RouterOptions) {

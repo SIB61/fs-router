@@ -1,6 +1,6 @@
 import type Koa from 'koa';
 import type Router from '@koa/router';
-import type { FrameworkAdapter } from '@sib61/fs-router-core';
+import type { FrameworkAdapter } from '@fs-router/core';
 
 export class KoaAdapter implements FrameworkAdapter<Router> {
   constructor(private router: Router) {}

@@ -1,6 +1,6 @@
 import type { Application } from 'express';
-import type { RouterOptions } from '@sib61/fs-router-core';
-import { createRouter } from '@sib61/fs-router-core';
+import type { RouterOptions } from '@fs-router/core';
+import { createRouter } from '@fs-router/core';
 import { ExpressAdapter } from './adapter.js';
 
 export async function createExpressRouter(app: Application, options: RouterOptions) {
