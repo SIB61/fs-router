@@ -95,7 +95,8 @@ export function parseRoutes(routesDir: string): ParsedRoute[] {
       if (stat.isDirectory()) {
         scanDirectory(fullPath);
       } else if (entry.endsWith('.route.ts') || entry.endsWith('.route.js') || 
-                 entry.endsWith('.middleware.ts') || entry.endsWith('.middleware.js')) {
+                 entry.endsWith('.middleware.ts') || entry.endsWith('.middleware.js') ||
+                 entry === 'route.ts' || entry === 'route.js') {
         const route = parseRouteFile(fullPath, routesDir);
         if (route) {
           routes.push(route);
@@ -121,9 +122,11 @@ function parseRouteFile(filePath: string, routesDir: string): ParsedRoute | null
   
   let pathPart = relativePath
     .replace(/\.middleware\.(ts|js)$/, '')
-    .replace(/\.route\.(ts|js)$/, '');
+    .replace(/\.route\.(ts|js)$/, '')
+    .replace(/\/route\.(ts|js)$/, '')
+    .replace(/^route\.(ts|js)$/, '');
   
-  const parts = pathPart.split(getPathSep());
+  const parts = pathPart.split(getPathSep()).filter(p => p && p !== 'index');
   const paramNames: string[] = [];
   const convertedParts: string[] = [];
   
@@ -178,10 +181,6 @@ function parseRouteFile(filePath: string, routesDir: string): ParsedRoute | null
   path = path.replace(/\/+/g, '/');
   
   if (hasCatchAll) {
-    path = path + '/*';
-  }
-  
-  if (isMiddleware && !path.endsWith('/*')) {
     path = path + '/*';
   }
   
