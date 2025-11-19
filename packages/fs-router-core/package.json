@@ -1,6 +1,6 @@
 {
   "name": "@fs-router/core",
-  "version": "0.0.4",
+  "version": "0.0.3",
   "publishConfig": {
     "access": "public"
   },
