@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-          scope: '@fs-router'
+          always-auth: true
 
       # Install pnpm
       - uses: pnpm/action-setup@v4
