@@ -22,6 +22,11 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      # Step 2: Diagnostic Step (CHECK HERE) 🔍
+      - name: CHECK .npmrc contents
+        # The tilde (~) ensures you target the home directory
+        run: cat ~/.npmrc
+
       # Install pnpm
       - uses: pnpm/action-setup@v4
         with:
