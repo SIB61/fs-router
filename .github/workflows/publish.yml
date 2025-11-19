@@ -33,7 +33,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Build
-      - run: pnpm build --if-present
+      - run: pnpm build 
 
       # Test
       - run: pnpm test
