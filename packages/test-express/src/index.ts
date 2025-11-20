@@ -1,5 +1,5 @@
 import express from 'express';
-import { createExpressRouter } from '@sib61/fs-router-express';
+import { createExpressRouter } from '@fs-router/express';
 
 const app = express();
 
