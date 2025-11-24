@@ -1,10 +1,10 @@
 {
   "name": "@fs-router/hono",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publishConfig": {
     "access": "public",
     "dependencies": {
-      "@fs-router/core": "^0.0.4"
+      "@fs-router/core": "^0.0.7"
     }
   },
   "description": "File-based routing for Hono",

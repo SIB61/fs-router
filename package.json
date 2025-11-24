@@ -1,6 +1,6 @@
 {
   "name": "universal-fs-router",
-  "version": "0.0.1",
+  "version": "0.0.7",
   "private": true,
   "description": "File-based routing for all JS/TS runtimes and frameworks",
   "scripts": {
