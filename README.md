@@ -305,7 +305,9 @@ routes/
 │   │   ├── route.ts                # GET,POST /api/posts
 │   │   ├── [slug].route.ts         # GET /api/posts/:slug
 │   │   └── trending.route.ts       # GET /api/posts/trending
-│   └── auth.middleware.ts          # Protects all /api routes
+│   └── auth.[...rest].middleware.ts # Protects all /api/auth/* routes
+├── settings/
+│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
 ├── webhooks/
 │   ├── stripe.route.ts             # POST /webhooks/stripe
 │   └── github.route.ts             # POST /webhooks/github
@@ -320,7 +322,9 @@ routes/
 ├── auth.route.ts                   # Authentication
 ├── health.route.ts                 # Health checks  
 ├── metrics.route.ts                # Monitoring
-└── auth.middleware.ts              # Global auth
+├── settings/
+│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
+└── auth.[...rest].middleware.ts    # Global auth middleware
 ```
 
 ## 🔧 Advanced Usage
@@ -355,6 +359,41 @@ class MyFrameworkAdapter implements FrameworkAdapter {
 
 const adapter = new MyFrameworkAdapter(myApp);
 await createRouter(adapter, { routesDir: './routes' });
+```
+
+### Catch-All Routes
+
+```typescript
+// routes/settings/[...rest].route.ts
+export const GET = async (req, res) => {
+  const restPath = req.params.rest || '';
+  
+  // Handle different settings paths
+  if (restPath === 'profile') {
+    return res.json({ setting: 'profile', data: {} });
+  }
+  
+  if (restPath === 'notifications') {
+    return res.json({ setting: 'notifications', data: {} });
+  }
+  
+  // Default settings response
+  return res.json({ 
+    path: `/settings/${restPath}`,
+    message: 'Settings endpoint',
+    availableSettings: ['profile', 'notifications', 'security']
+  });
+};
+
+export const POST = async (req, res) => {
+  const restPath = req.params.rest || '';
+  const updates = req.body;
+  
+  return res.json({
+    message: `Updated settings for ${restPath}`,
+    updates
+  });
+};
 ```
 
 ### Environment-Specific Routes

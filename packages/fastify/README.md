@@ -418,6 +418,60 @@ export const POST = async (
 ```
 
 ### With Fastify Multipart
+### Catch-All Routes
+
+```typescript
+// routes/settings/[...rest].route.ts
+import type { FastifyRequest, FastifyReply } from 'fastify';
+
+interface SettingsParams {
+  rest?: string;
+}
+
+export const GET = async (
+  request: FastifyRequest<{ Params: SettingsParams }>,
+  reply: FastifyReply
+) => {
+  const restPath = request.params.rest || '';
+  
+  // Handle different settings paths
+  if (restPath === 'profile') {
+    return {
+      setting: 'profile',
+      data: await getUserProfileSettings()
+    };
+  }
+  
+  if (restPath === 'notifications') {
+    return {
+      setting: 'notifications', 
+      data: await getNotificationSettings()
+    };
+  }
+  
+  // Default settings response
+  return {
+    path: `/settings/${restPath}`,
+    message: 'Settings endpoint',
+    availableSettings: ['profile', 'notifications', 'security']
+  };
+};
+
+export const POST = async (
+  request: FastifyRequest<{ Params: SettingsParams }>,
+  reply: FastifyReply
+) => {
+  const restPath = request.params.rest || '';
+  const updates = request.body;
+  
+  return {
+    message: `Updated settings for ${restPath}`,
+    updates
+  };
+};
+```
+
+### File Upload Route
 
 ```typescript
 // routes/upload.route.ts
@@ -496,18 +550,20 @@ await createRouter(adapter, {
 routes/
 ├── api/
 │   ├── auth/
-│   │   ├── login.route.ts      # POST /api/auth/login
-│   │   ├── register.route.ts   # POST /api/auth/register
-│   │   └── refresh.route.ts    # POST /api/auth/refresh
+│   │   ├── login.route.ts          # POST /api/auth/login
+│   │   ├── register.route.ts       # POST /api/auth/register
+│   │   └── refresh.route.ts        # POST /api/auth/refresh
 │   ├── users/
-│   │   ├── route.ts            # GET,POST /api/users
-│   │   ├── [id].route.ts       # GET,PUT,DELETE /api/users/:id
+│   │   ├── route.ts                # GET,POST /api/users
+│   │   ├── [id].route.ts           # GET,PUT,DELETE /api/users/:id
 │   │   └── [id]/
-│   │       └── posts.route.ts  # GET,POST /api/users/:id/posts
-│   └── auth.middleware.ts      # Middleware for all /api routes
+│   │       └── posts.route.ts      # GET,POST /api/users/:id/posts
+│   └── auth.[...rest].middleware.ts # Middleware for all /api/auth/* routes
+├── settings/
+│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
 ├── webhooks/
-│   └── stripe.route.ts         # POST /webhooks/stripe
-└── health.route.ts             # GET /health
+│   └── stripe.route.ts             # POST /webhooks/stripe
+└── health.route.ts                 # GET /health
 ```
 
 ### WebSocket Route (with Fastify WebSocket)

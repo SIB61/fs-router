@@ -301,6 +301,49 @@ export const POST = async (c: Context) => {
 };
 ```
 
+### Catch-All Routes
+
+```typescript
+// routes/settings/[...rest].route.ts
+import type { Context } from 'hono';
+
+export const GET = async (c: Context) => {
+  const restPath = c.req.param('rest') || '';
+  
+  // Handle different settings paths
+  if (restPath === 'profile') {
+    return c.json({
+      setting: 'profile',
+      data: await getUserProfileSettings()
+    });
+  }
+  
+  if (restPath === 'notifications') {
+    return c.json({
+      setting: 'notifications',
+      data: await getNotificationSettings()
+    });
+  }
+  
+  // Default settings response
+  return c.json({
+    path: `/settings/${restPath}`,
+    message: 'Settings endpoint',
+    availableSettings: ['profile', 'notifications', 'security']
+  });
+};
+
+export const POST = async (c: Context) => {
+  const restPath = c.req.param('rest') || '';
+  const updates = await c.req.json();
+  
+  return c.json({
+    message: `Updated settings for ${restPath}`,
+    updates
+  });
+};
+```
+
 ### WebSocket Routes (Hono v4+)
 
 ```typescript
@@ -443,18 +486,20 @@ await createRouter(adapter, {
 routes/
 ├── api/
 │   ├── auth/
-│   │   ├── login.route.ts      # POST /api/auth/login
-│   │   ├── register.route.ts   # POST /api/auth/register
-│   │   └── refresh.route.ts    # POST /api/auth/refresh
+│   │   ├── login.route.ts          # POST /api/auth/login
+│   │   ├── register.route.ts       # POST /api/auth/register
+│   │   └── refresh.route.ts        # POST /api/auth/refresh
 │   ├── users/
-│   │   ├── route.ts            # GET,POST /api/users
-│   │   ├── [id].route.ts       # GET,PUT,DELETE /api/users/:id
+│   │   ├── route.ts                # GET,POST /api/users
+│   │   ├── [id].route.ts           # GET,PUT,DELETE /api/users/:id
 │   │   └── [id]/
-│   │       └── posts.route.ts  # GET,POST /api/users/:id/posts
-│   └── auth.middleware.ts      # Middleware for all /api routes
+│   │       └── posts.route.ts      # GET,POST /api/users/:id/posts
+│   └── auth.[...rest].middleware.ts # Middleware for all /api/auth/* routes
+├── settings/
+│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
 ├── webhooks/
-│   └── stripe.route.ts         # POST /webhooks/stripe
-└── health.route.ts             # GET /health
+│   └── stripe.route.ts             # POST /webhooks/stripe
+└── health.route.ts                 # GET /health
 ```
 
 ### File Upload Route

@@ -211,6 +211,43 @@ export const PATCH = (req: AuthenticatedRequest, res: Response) => {
 };
 ```
 
+### Catch-All Routes
+
+```typescript
+// routes/settings/[...rest].route.ts
+import type { Request, Response } from 'express';
+
+export const GET = (req: Request, res: Response) => {
+  const restPath = req.params.rest || '';
+  
+  // Handle different settings paths
+  if (restPath === 'profile') {
+    return res.json({ setting: 'profile', data: {} });
+  }
+  
+  if (restPath === 'notifications') {
+    return res.json({ setting: 'notifications', data: {} });
+  }
+  
+  // Default settings response
+  res.json({ 
+    path: `/settings/${restPath}`,
+    message: 'Settings endpoint',
+    availableSettings: ['profile', 'notifications', 'security']
+  });
+};
+
+export const POST = (req: Request, res: Response) => {
+  const restPath = req.params.rest || '';
+  const updates = req.body;
+  
+  res.json({
+    message: `Updated settings for ${restPath}`,
+    updates
+  });
+};
+```
+
 ### Error Handling
 
 ```typescript
@@ -353,13 +390,21 @@ await createRouter(adapter, {
 ```
 routes/
 ├── api/
-│   ├── users.route.ts          # GET,POST /api/users
+│   ├── auth/
+│   │   ├── login.route.ts          # POST /api/auth/login
+│   │   ├── register.route.ts       # POST /api/auth/register
+│   │   └── refresh.route.ts        # POST /api/auth/refresh
 │   ├── users/
-│   │   ├── [id].route.ts       # GET,PUT,DELETE /api/users/:id
+│   │   ├── route.ts                # GET,POST /api/users
+│   │   ├── [id].route.ts           # GET,PUT,DELETE /api/users/:id
 │   │   └── [id]/
-│   │       └── posts.route.ts  # GET,POST /api/users/:id/posts
-│   └── auth.middleware.ts      # Middleware for all /api routes
-└── health.route.ts             # GET /health
+│   │       └── posts.route.ts      # GET,POST /api/users/:id/posts
+│   └── auth.[...rest].middleware.ts # Middleware for all /api/auth/* routes
+├── settings/
+│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
+├── webhooks/
+│   └── stripe.route.ts             # POST /webhooks/stripe
+└── health.route.ts                 # GET /health
 ```
 
 ### File Upload Route

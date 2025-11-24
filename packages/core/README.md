@@ -257,6 +257,30 @@ class FilteringAdapter implements FrameworkAdapter {
 }
 ```
 
+## Examples
+
+### REST API Structure
+
+```
+routes/
+├── api/
+│   ├── auth/
+│   │   ├── login.route.ts          # POST /api/auth/login
+│   │   ├── register.route.ts       # POST /api/auth/register
+│   │   └── refresh.route.ts        # POST /api/auth/refresh
+│   ├── users/
+│   │   ├── route.ts                # GET,POST /api/users
+│   │   ├── [id].route.ts           # GET,PUT,DELETE /api/users/:id
+│   │   └── [id]/
+│   │       └── posts.route.ts      # GET,POST /api/users/:id/posts
+│   └── auth.[...rest].middleware.ts # Middleware for all /api/auth/* routes
+├── settings/
+│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
+├── webhooks/
+│   └── stripe.route.ts             # POST /webhooks/stripe
+└── health.route.ts                 # GET /health
+```
+
 ## Contributing
 
 This package is part of the Universal FS Router monorepo. Please see the [main repository](https://github.com/sib61/fs-router) for contribution guidelines.

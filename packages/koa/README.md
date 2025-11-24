@@ -341,6 +341,51 @@ export const POST = async (ctx: Context) => {
 };
 ```
 
+### Catch-All Routes
+
+```typescript
+// routes/settings/[...rest].route.ts
+import type { Context } from 'koa';
+
+export const GET = async (ctx: Context) => {
+  const restPath = ctx.params.rest || '';
+  
+  // Handle different settings paths
+  if (restPath === 'profile') {
+    ctx.body = {
+      setting: 'profile',
+      data: await getUserProfileSettings()
+    };
+    return;
+  }
+  
+  if (restPath === 'notifications') {
+    ctx.body = {
+      setting: 'notifications',
+      data: await getNotificationSettings()
+    };
+    return;
+  }
+  
+  // Default settings response
+  ctx.body = {
+    path: `/settings/${restPath}`,
+    message: 'Settings endpoint',
+    availableSettings: ['profile', 'notifications', 'security']
+  };
+};
+
+export const POST = async (ctx: Context) => {
+  const restPath = ctx.params.rest || '';
+  const updates = ctx.request.body;
+  
+  ctx.body = {
+    message: `Updated settings for ${restPath}`,
+    updates
+  };
+};
+```
+
 ### File Upload Route
 
 ```typescript
@@ -532,18 +577,20 @@ await createRouter(adapter, {
 routes/
 ├── api/
 │   ├── auth/
-│   │   ├── login.route.ts      # POST /api/auth/login
-│   │   ├── register.route.ts   # POST /api/auth/register
-│   │   └── refresh.route.ts    # POST /api/auth/refresh
+│   │   ├── login.route.ts          # POST /api/auth/login
+│   │   ├── register.route.ts       # POST /api/auth/register
+│   │   └── refresh.route.ts        # POST /api/auth/refresh
 │   ├── users/
-│   │   ├── route.ts            # GET,POST /api/users
-│   │   ├── [id].route.ts       # GET,PUT,DELETE /api/users/:id
+│   │   ├── route.ts                # GET,POST /api/users
+│   │   ├── [id].route.ts           # GET,PUT,DELETE /api/users/:id
 │   │   └── [id]/
-│   │       └── posts.route.ts  # GET,POST /api/users/:id/posts
-│   └── auth.middleware.ts      # Middleware for all /api routes
+│   │       └── posts.route.ts      # GET,POST /api/users/:id/posts
+│   └── auth.[...rest].middleware.ts # Middleware for all /api/auth/* routes
+├── settings/
+│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
 ├── webhooks/
-│   └── stripe.route.ts         # POST /webhooks/stripe
-└── health.route.ts             # GET /health
+│   └── stripe.route.ts             # POST /webhooks/stripe
+└── health.route.ts                 # GET /health
 ```
 
 ### GraphQL Integration
