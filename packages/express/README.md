@@ -1,29 +1,26 @@
 # @fs-router/express
 
-File-based routing adapter for **Express.js**. Brings Next.js-style file-based routing to your Express applications with zero configuration.
+File-based routing for **Express.js** - brings Next.js-style routing conventions to Express with zero configuration.
 
 [![npm version](https://badge.fury.io/js/%40fs-router%2Fexpress.svg)](https://badge.fury.io/js/%40fs-router%2Fexpress)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-- 🚀 **Zero Configuration**: Works out of the box with Express
-- 📂 **File-System Based**: Define routes by creating files
-- 🛠️ **TypeScript Support**: Full TypeScript support with Express types
-- ⚡ **Lightweight**: Minimal overhead over native Express routing
-- 🔌 **Middleware Support**: Easy middleware integration via `.middleware.ts` files
-- 🎯 **Express Native**: Uses Express's native routing under the hood
+- 🚀 Zero Configuration
+- 📂 File-System Based Routes
+- 🛠️ Full TypeScript Support
+- ⚡ Lightweight & Fast
+- 🔌 Automatic Middleware Detection
+- 🎯 Express Native Routing
 
 ## Installation
 
 ```bash
-# npm
 npm install @fs-router/express
-
-# yarn
+# or
 yarn add @fs-router/express
-
-# pnpm
+# or
 pnpm add @fs-router/express
 ```
 
@@ -34,37 +31,29 @@ import express from 'express';
 import { useFsRouter } from '@fs-router/express';
 
 const app = express();
-
-// Enable JSON parsing
 app.use(express.json());
 
-// Set up file-based routing
 await useFsRouter(app, {
-  routesDir: './routes',
-  verbose: true // Optional: enable logging
+  routesDir: 'routes', // Use 'src/routes' if using src folder
+  verbose: true
 });
 
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
-});
+app.listen(3000);
 ```
 
-## File-Based Routing
+## Route Conventions
 
-### Route Files
-
-Create route files in your `routes` directory:
+### File Structure to Routes
 
 | File Path | Express Route | Description |
 |-----------|---------------|-------------|
 | `route.ts` | `/` | Root route |
 | `users.route.ts` | `/users` | Simple route |
-| `users/route.ts` | `/users` | Alternative syntax |
 | `users/[id].route.ts` | `/users/:id` | Dynamic parameter |
-| `posts/[...slug].route.ts` | `/posts/*slugs` | Catch-all route |
+| `posts/[...slug].route.ts` | `/posts/*slug` | Catch-all route |
 | `api/v1/users.route.ts` | `/api/v1/users` | Nested route |
 
-### HTTP Methods
+### HTTP Method Handlers
 
 Export functions named after HTTP methods:
 
@@ -73,51 +62,30 @@ Export functions named after HTTP methods:
 import type { Request, Response } from 'express';
 
 export const GET = (req: Request, res: Response) => {
-  const { id } = req.params;
-  res.json({ 
-    id, 
-    message: `Getting user ${id}` 
-  });
+  res.json({ id: req.params.id });
 };
 
 export const POST = (req: Request, res: Response) => {
-  const { id } = req.params;
-  const userData = req.body;
-  
-  res.status(201).json({ 
-    id, 
-    created: true, 
-    data: userData 
-  });
+  res.status(201).json({ created: true });
 };
 
 export const PUT = (req: Request, res: Response) => {
-  const { id } = req.params;
-  const updates = req.body;
-  
-  res.json({ 
-    id, 
-    updated: true, 
-    data: updates 
-  });
+  res.json({ updated: true });
 };
 
 export const DELETE = (req: Request, res: Response) => {
-  const { id } = req.params;
   res.status(204).send();
 };
 
-// Handle any other HTTP method not explicitly defined
+// Fallback for other methods
 export default (req: Request, res: Response) => {
-  res.status(405).json({ 
-    error: `Method ${req.method} not allowed` 
-  });
+  res.status(405).json({ error: `Method ${req.method} not allowed` });
 };
 ```
 
-### Middleware
+### Middleware Files
 
-Create middleware files using the `.middleware.ts` suffix:
+Create middleware with `.middleware.ts` suffix:
 
 ```typescript
 // routes/auth.middleware.ts
@@ -127,265 +95,17 @@ export default (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization;
   
   if (!token) {
-    return res.status(401).json({ error: 'No authorization token' });
-  }
-  
-  // Validate token logic here
-  console.log('Auth middleware passed');
-  next();
-};
-```
-
-```typescript
-// routes/api/rate-limit.middleware.ts
-import type { Request, Response, NextFunction } from 'express';
-
-const requests = new Map();
-
-export default (req: Request, res: Response, next: NextFunction) => {
-  const ip = req.ip;
-  const now = Date.now();
-  const windowMs = 60 * 1000; // 1 minute
-  const maxRequests = 100;
-  
-  if (!requests.has(ip)) {
-    requests.set(ip, { count: 1, resetTime: now + windowMs });
-    return next();
-  }
-  
-  const clientRequests = requests.get(ip);
-  
-  if (now > clientRequests.resetTime) {
-    clientRequests.count = 1;
-    clientRequests.resetTime = now + windowMs;
-    return next();
-  }
-  
-  if (clientRequests.count >= maxRequests) {
-    return res.status(429).json({ 
-      error: 'Too many requests' 
-    });
-  }
-  
-  clientRequests.count++;
-  next();
-};
-```
-
-## Advanced Usage
-
-### With TypeScript
-
-```typescript
-// routes/users/profile.route.ts
-import type { Request, Response } from 'express';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface AuthenticatedRequest extends Request {
-  user?: User;
-}
-
-export const GET = (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   
-  res.json({
-    profile: req.user
-  });
+  // Validate token
+  next();
 };
-
-export const PATCH = (req: AuthenticatedRequest, res: Response) => {
-  const updates: Partial<User> = req.body;
-  
-  // Update user logic here
-  res.json({
-    message: 'Profile updated',
-    updates
-  });
-};
-```
-
-### Catch-All Routes
-
-```typescript
-// routes/settings/[...rest].route.ts
-import type { Request, Response } from 'express';
-
-export const GET = (req: Request, res: Response) => {
-  const restPath = req.params.rest || '';
-  
-  // Handle different settings paths
-  if (restPath === 'profile') {
-    return res.json({ setting: 'profile', data: {} });
-  }
-  
-  if (restPath === 'notifications') {
-    return res.json({ setting: 'notifications', data: {} });
-  }
-  
-  // Default settings response
-  res.json({ 
-    path: `/settings/${restPath}`,
-    message: 'Settings endpoint',
-    availableSettings: ['profile', 'notifications', 'security']
-  });
-};
-
-export const POST = (req: Request, res: Response) => {
-  const restPath = req.params.rest || '';
-  const updates = req.body;
-  
-  res.json({
-    message: `Updated settings for ${restPath}`,
-    updates
-  });
-};
-```
-
-### Error Handling
-
-```typescript
-// routes/users/[id].route.ts
-import type { Request, Response, NextFunction } from 'express';
-
-export const GET = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
-    
-    // Simulate async operation
-    const user = await getUserById(id);
-    
-    if (!user) {
-      return res.status(404).json({ 
-        error: 'User not found' 
-      });
-    }
-    
-    res.json({ user });
-  } catch (error) {
-    next(error); // Pass to Express error handler
-  }
-};
-```
-
-### Async Routes
-
-```typescript
-// routes/posts.route.ts
-import type { Request, Response } from 'express';
-
-export const GET = async (req: Request, res: Response) => {
-  try {
-    const posts = await fetchPostsFromDatabase();
-    res.json({ posts });
-  } catch (error) {
-    res.status(500).json({ 
-      error: 'Failed to fetch posts' 
-    });
-  }
-};
-
-export const POST = async (req: Request, res: Response) => {
-  try {
-    const newPost = await createPost(req.body);
-    res.status(201).json({ post: newPost });
-  } catch (error) {
-    res.status(400).json({ 
-      error: 'Failed to create post' 
-    });
-  }
-};
-```
-
-## Integration with Express Features
-
-### With Express Middleware
-
-```typescript
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import { useFsRouter } from '@fs-router/express';
-
-const app = express();
-
-// Global middleware
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// File-based routes
-await useFsRouter(app, {
-  routesDir: './routes'
-});
-
-// Global error handler
-app.use((error, req, res, next) => {
-  console.error(error);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-app.listen(3000);
-```
-
-### With Express Router
-
-```typescript
-import express from 'express';
-import { ExpressAdapter } from '@fs-router/express';
-import { createRouter } from '@fs-router/core';
-
-const app = express();
-const apiRouter = express.Router();
-
-// Set up file-based routing on a sub-router
-const adapter = new ExpressAdapter(apiRouter);
-await createRouter(adapter, {
-  routesDir: './api-routes'
-});
-
-app.use('/api', apiRouter);
-app.listen(3000);
-```
-
-## API Reference
-
-### `useFsRouter(app, options)`
-
-Sets up file-based routing on an Express application.
-
-**Parameters:**
-- `app` - Express application instance
-- `options.routesDir` - Directory containing route files (required)
-- `options.verbose` - Enable verbose logging (optional, default: false)
-
-**Returns:** `Promise<void>`
-
-### `ExpressAdapter`
-
-The underlying adapter class. Use this for advanced customization:
-
-```typescript
-import { ExpressAdapter } from '@fs-router/express';
-import { createRouter } from '@fs-router/core';
-
-const adapter = new ExpressAdapter(app);
-await createRouter(adapter, {
-  routesDir: './routes',
-  verbose: true
-});
 ```
 
 ## Examples
 
-### REST API
+### REST API Structure
 
 ```
 routes/
@@ -393,83 +113,113 @@ routes/
 │   ├── auth/
 │   │   ├── login.route.ts          # POST /api/auth/login
 │   │   ├── register.route.ts       # POST /api/auth/register
-│   │   └── refresh.route.ts        # POST /api/auth/refresh
+│   │   └── [...rest].middleware.ts # Middleware for /api/auth/* (all auth routes)
 │   ├── users/
-│   │   ├── route.ts                # GET,POST /api/users
-│   │   ├── [id].route.ts           # GET,PUT,DELETE /api/users/:id
-│   │   └── [id]/
-│   │       └── posts.route.ts      # GET,POST /api/users/:id/posts
-│   └── auth.[...rest].middleware.ts # Middleware for all /api/auth/* routes
-├── settings/
-│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
-├── webhooks/
-│   └── stripe.route.ts             # POST /webhooks/stripe
+│   │   ├── route.ts                # GET, POST /api/users
+│   │   └── [id].route.ts           # GET, PUT, DELETE /api/users/:id
+│   └── protected.middleware.ts     # Middleware for /api/protected only
 └── health.route.ts                 # GET /health
 ```
 
-### File Upload Route
+### Async Handlers
 
 ```typescript
-// routes/upload.route.ts
-import type { Request, Response } from 'express';
-import multer from 'multer';
+// routes/posts.route.ts
+export const GET = async (req, res) => {
+  const posts = await db.posts.findMany();
+  res.json({ posts });
+};
 
-const upload = multer({ dest: 'uploads/' });
-
-export const POST = [
-  upload.single('file'),
-  (req: Request, res: Response) => {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-    
-    res.json({
-      message: 'File uploaded successfully',
-      filename: req.file.filename,
-      originalname: req.file.originalname
-    });
-  }
-];
+export const POST = async (req, res) => {
+  const post = await db.posts.create({ data: req.body });
+  res.status(201).json({ post });
+};
 ```
 
-## Migration from Express Router
-
-### Before (Express Router)
+### Error Handling
 
 ```typescript
-const router = express.Router();
+// routes/users/[id].route.ts
+export const GET = async (req, res, next) => {
+  try {
+    const user = await db.users.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Not found' });
+    res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+};
+```
 
-router.get('/users', (req, res) => {
-  res.json({ users: [] });
+### Catch-All Routes
+
+```typescript
+// routes/docs/[...path].route.ts
+export const GET = (req, res) => {
+  const path = req.params.path || '';
+  res.json({ 
+    documentation: `Docs for ${path}` 
+  });
+};
+```
+
+## API Reference
+
+### `useFsRouter(app, options)`
+
+```typescript
+await useFsRouter(app, {
+  routesDir: string;   // Required: Path to routes directory
+  verbose?: boolean;   // Optional: Enable logging (default: false)
 });
+```
 
-router.get('/users/:id', (req, res) => {
-  res.json({ user: { id: req.params.id } });
+### `ExpressAdapter`
+
+For advanced usage with custom router instances:
+
+```typescript
+import { ExpressAdapter } from '@fs-router/express';
+import { createRouter } from '@fs-router/core';
+
+const router = express.Router();
+const adapter = new ExpressAdapter(router);
+
+await createRouter(adapter, {
+  routesDir: 'routes',
+  verbose: true
 });
 
 app.use('/api', router);
 ```
 
+## Migration Guide
+
+### Before (Express Router)
+
+```typescript
+app.get('/users', (req, res) => res.json({ users: [] }));
+app.get('/users/:id', (req, res) => res.json({ id: req.params.id }));
+```
+
 ### After (FS Router)
 
 ```typescript
-// routes/api/users.route.ts
-export const GET = (req, res) => {
-  res.json({ users: [] });
-};
+// routes/users.route.ts
+export const GET = (req, res) => res.json({ users: [] });
 
-// routes/api/users/[id].route.ts
-export const GET = (req, res) => {
-  res.json({ user: { id: req.params.id } });
-};
-
-// main.ts
-await useFsRouter(app, { routesDir: './routes' });
+// routes/users/[id].route.ts
+export const GET = (req, res) => res.json({ id: req.params.id });
 ```
 
 ## Contributing
 
-This package is part of the Universal FS Router monorepo. Please see the [main repository](https://github.com/sib61/fs-router) for contribution guidelines.
+We welcome contributions! Please visit our [GitHub repository](https://github.com/sib61/fs-router) to:
+
+- 🐛 [Report bugs](https://github.com/sib61/fs-router/issues)
+- 💡 [Request features](https://github.com/sib61/fs-router/issues)
+- 🔧 [Submit pull requests](https://github.com/sib61/fs-router/pulls)
+- ⭐ Star the project if you find it useful!
 
 ## License
 

@@ -1,30 +1,27 @@
 # @fs-router/hono
 
-File-based routing adapter for **Hono**. Brings Next.js-style file-based routing to your Hono applications with zero configuration and full TypeScript support. Perfect for building APIs that run on any JavaScript runtime.
+File-based routing for **Hono** - brings Next.js-style routing conventions to Hono with zero configuration. Works on any JavaScript runtime.
 
 [![npm version](https://badge.fury.io/js/%40fs-router%2Fhono.svg)](https://badge.fury.io/js/%40fs-router%2Fhono)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-- 🚀 **Zero Configuration**: Works out of the box with Hono
-- 📂 **File-System Based**: Define routes by creating files
-- 🛠️ **TypeScript Support**: Full TypeScript support with Hono types
-- ⚡ **Ultra Fast**: Built on Hono's ultra-fast web framework
-- 🌐 **Universal**: Works on Node.js, Bun, Deno, Cloudflare Workers, and more
-- 🔌 **Middleware Support**: Easy middleware integration via `.middleware.ts` files
-- 🎯 **Hono Native**: Uses Hono's native routing under the hood
+- 🚀 Zero Configuration
+- 📂 File-System Based Routes
+- 🛠️ Full TypeScript Support
+- ⚡ Ultra Fast Performance
+- 🌐 Universal - Node.js, Bun, Deno, Cloudflare Workers, etc.
+- 🔌 Automatic Middleware Detection
+- 🎯 Hono Native Routing
 
 ## Installation
 
 ```bash
-# npm
 npm install @fs-router/hono
-
-# yarn
+# or
 yarn add @fs-router/hono
-
-# pnpm
+# or
 pnpm add @fs-router/hono
 ```
 
@@ -36,44 +33,52 @@ import { useFsRouter } from '@fs-router/hono';
 
 const app = new Hono();
 
-// Set up file-based routing
 await useFsRouter(app, {
-  routesDir: './routes',
-  verbose: true // Optional: enable logging
+  routesDir: 'routes', // Use 'src/routes' if using src folder
+  verbose: true
 });
 
-// For Node.js
 export default app;
+```
 
-// For Bun
+### Runtime-Specific Setup
+
+**Node.js:**
+```typescript
+export default app;
+```
+
+**Bun:**
+```typescript
 export default {
   port: 3000,
   fetch: app.fetch,
 };
+```
 
-// For Deno
+**Deno:**
+```typescript
 Deno.serve(app.fetch);
+```
 
-// For Cloudflare Workers
+**Cloudflare Workers:**
+```typescript
 export default app;
 ```
 
-## File-Based Routing
+## Route Conventions
 
-### Route Files
-
-Create route files in your `routes` directory:
+### File Structure to Routes
 
 | File Path | Hono Route | Description |
 |-----------|------------|-------------|
 | `route.ts` | `/` | Root route |
 | `users.route.ts` | `/users` | Simple route |
-| `users/route.ts` | `/users` | Alternative syntax |
 | `users/[id].route.ts` | `/users/:id` | Dynamic parameter |
 | `posts/[...slug].route.ts` | `/posts/*` | Catch-all route |
 | `api/v1/users.route.ts` | `/api/v1/users` | Nested route |
 
-### HTTP Methods
+### HTTP Method Handlers
 
 Export functions named after HTTP methods:
 
@@ -81,401 +86,58 @@ Export functions named after HTTP methods:
 // routes/users/[id].route.ts
 import type { Context } from 'hono';
 
-interface UserParams {
-  id: string;
-}
-
-export const GET = async (c: Context<{ Variables: { user?: any } }>) => {
+export const GET = async (c: Context) => {
   const id = c.req.param('id');
-  
-  const user = await getUserById(id);
+  const user = await db.users.findById(id);
   
   if (!user) {
-    return c.json({ error: 'User not found' }, 404);
+    return c.json({ error: 'Not found' }, 404);
   }
   
-  return c.json({
-    id,
-    user,
-    message: `Getting user ${id}`
-  });
+  return c.json({ user });
 };
 
 export const POST = async (c: Context) => {
-  const id = c.req.param('id');
-  const userData = await c.req.json();
-  
-  const createdUser = await createUser(id, userData);
-  
-  return c.json({
-    id,
-    created: true,
-    user: createdUser
-  }, 201);
-};
-
-export const PUT = async (c: Context) => {
-  const id = c.req.param('id');
-  const updates = await c.req.json();
-  
-  const updatedUser = await updateUser(id, updates);
-  
-  return c.json({
-    id,
-    updated: true,
-    user: updatedUser
-  });
+  const body = await c.req.json();
+  const user = await db.users.create(body);
+  return c.json({ user }, 201);
 };
 
 export const DELETE = async (c: Context) => {
   const id = c.req.param('id');
-  
-  await deleteUser(id);
-  
+  await db.users.delete(id);
   return c.json({ deleted: true }, 204);
 };
 
-// Handle any other HTTP method not explicitly defined
+// Fallback for other methods
 export default async (c: Context) => {
-  return c.json({
-    error: `Method ${c.req.method} not allowed`
-  }, 405);
+  return c.json({ error: 'Method not allowed' }, 405);
 };
 ```
 
-### Middleware
+### Middleware Files
 
-Create middleware files using the `.middleware.ts` suffix:
+Create middleware with `.middleware.ts` suffix:
 
 ```typescript
 // routes/auth.middleware.ts
 import type { Context, Next } from 'hono';
-import { jwt } from 'hono/jwt';
 
 export default async (c: Context, next: Next) => {
   const token = c.req.header('Authorization')?.replace('Bearer ', '');
   
   if (!token) {
-    return c.json({ error: 'No authorization token' }, 401);
+    return c.json({ error: 'Unauthorized' }, 401);
   }
   
   try {
-    const decoded = await verifyJWT(token);
-    c.set('user', decoded);
-    
-    console.log('Auth middleware passed');
+    const user = await verifyToken(token);
+    c.set('user', user);
     await next();
   } catch (error) {
     return c.json({ error: 'Invalid token' }, 401);
   }
 };
-```
-
-```typescript
-// routes/api/cors.middleware.ts
-import type { Context, Next } from 'hono';
-import { cors } from 'hono/cors';
-
-export default cors({
-  origin: ['http://localhost:3000', 'https://yourdomain.com'],
-  allowHeaders: ['Content-Type', 'Authorization'],
-  allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
-  exposeHeaders: ['Content-Length'],
-  maxAge: 600,
-  credentials: true,
-});
-```
-
-## Advanced Usage
-
-### With Hono Context Variables
-
-```typescript
-// routes/protected/profile.route.ts
-import type { Context } from 'hono';
-
-type Variables = {
-  user: {
-    id: string;
-    email: string;
-  };
-};
-
-export const GET = async (c: Context<{ Variables: Variables }>) => {
-  // User is set by middleware
-  const user = c.get('user');
-  
-  const profile = await getUserProfile(user.id);
-  
-  return c.json({ profile });
-};
-
-export const PATCH = async (c: Context<{ Variables: Variables }>) => {
-  const user = c.get('user');
-  const updates = await c.req.json();
-  
-  const updatedProfile = await updateUserProfile(user.id, updates);
-  
-  return c.json({
-    message: 'Profile updated',
-    profile: updatedProfile
-  });
-};
-```
-
-### Error Handling
-
-```typescript
-// routes/users/[id].route.ts
-import type { Context } from 'hono';
-import { HTTPException } from 'hono/http-exception';
-
-export const GET = async (c: Context) => {
-  try {
-    const id = c.req.param('id');
-    
-    if (!isValidId(id)) {
-      throw new HTTPException(400, {
-        message: 'Invalid user ID format'
-      });
-    }
-    
-    const user = await getUserById(id);
-    
-    if (!user) {
-      throw new HTTPException(404, {
-        message: 'User not found'
-      });
-    }
-    
-    return c.json({ user });
-  } catch (error) {
-    if (error instanceof HTTPException) {
-      throw error;
-    }
-    
-    console.error('Unexpected error:', error);
-    throw new HTTPException(500, {
-      message: 'Internal server error'
-    });
-  }
-};
-```
-
-### Validation with Zod
-
-```typescript
-// routes/users.route.ts
-import type { Context } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
-
-const userSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  age: z.number().min(0).max(150)
-});
-
-export const POST = async (c: Context) => {
-  // Manual validation (or use zValidator middleware in main app)
-  const body = await c.req.json();
-  
-  try {
-    const validatedData = userSchema.parse(body);
-    const user = await createUser(validatedData);
-    
-    return c.json({
-      success: true,
-      user
-    }, 201);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json({
-        error: 'Validation failed',
-        details: error.errors
-      }, 400);
-    }
-    
-    throw error;
-  }
-};
-```
-
-### Catch-All Routes
-
-```typescript
-// routes/settings/[...rest].route.ts
-import type { Context } from 'hono';
-
-export const GET = async (c: Context) => {
-  const restPath = c.req.param('rest') || '';
-  
-  // Handle different settings paths
-  if (restPath === 'profile') {
-    return c.json({
-      setting: 'profile',
-      data: await getUserProfileSettings()
-    });
-  }
-  
-  if (restPath === 'notifications') {
-    return c.json({
-      setting: 'notifications',
-      data: await getNotificationSettings()
-    });
-  }
-  
-  // Default settings response
-  return c.json({
-    path: `/settings/${restPath}`,
-    message: 'Settings endpoint',
-    availableSettings: ['profile', 'notifications', 'security']
-  });
-};
-
-export const POST = async (c: Context) => {
-  const restPath = c.req.param('rest') || '';
-  const updates = await c.req.json();
-  
-  return c.json({
-    message: `Updated settings for ${restPath}`,
-    updates
-  });
-};
-```
-
-### WebSocket Routes (Hono v4+)
-
-```typescript
-// routes/ws/chat.route.ts
-import type { Context } from 'hono';
-import { upgradeWebSocket } from 'hono/cloudflare-workers'; // or appropriate adapter
-
-export const GET = upgradeWebSocket((c) => {
-  return {
-    onMessage(event, ws) {
-      console.log(`Message from client: ${event.data}`);
-      ws.send(`Echo: ${event.data}`);
-    },
-    onClose: () => {
-      console.log('Connection closed');
-    },
-    onOpen: () => {
-      console.log('Connection opened');
-    },
-  };
-});
-```
-
-## Integration with Hono Features
-
-### With Hono Middleware
-
-```typescript
-import { Hono } from 'hono';
-import { logger } from 'hono/logger';
-import { prettyJSON } from 'hono/pretty-json';
-import { secureHeaders } from 'hono/secure-headers';
-import { timing } from 'hono/timing';
-import { useFsRouter } from '@fs-router/hono';
-
-const app = new Hono();
-
-// Global middleware
-app.use('*', logger());
-app.use('*', timing());
-app.use('*', secureHeaders());
-app.use('*', prettyJSON());
-
-// File-based routes
-await useFsRouter(app, {
-  routesDir: './routes'
-});
-
-export default app;
-```
-
-### With Hono JSX (for SSR)
-
-```typescript
-// routes/pages/users/[id].route.ts
-import type { Context } from 'hono';
-import { Layout } from '../../../components/Layout';
-import { UserProfile } from '../../../components/UserProfile';
-
-export const GET = async (c: Context) => {
-  const id = c.req.param('id');
-  const user = await getUserById(id);
-  
-  if (!user) {
-    return c.notFound();
-  }
-  
-  return c.html(
-    <Layout title={`User: ${user.name}`}>
-      <UserProfile user={user} />
-    </Layout>
-  );
-};
-```
-
-### Environment-Specific Builds
-
-```typescript
-// For Cloudflare Workers
-import { Hono } from 'hono';
-import { useFsRouter } from '@fs-router/hono';
-
-const app = new Hono<{ Bindings: CloudflareBindings }>();
-
-await useFsRouter(app, {
-  routesDir: './routes'
-});
-
-export default app;
-
-// For Bun
-import { Hono } from 'hono';
-import { useFsRouter } from '@fs-router/hono';
-
-const app = new Hono();
-
-await useFsRouter(app, {
-  routesDir: './routes'
-});
-
-export default {
-  port: process.env.PORT || 3000,
-  fetch: app.fetch,
-};
-```
-
-## API Reference
-
-### `useFsRouter(app, options)`
-
-Sets up file-based routing on a Hono application.
-
-**Parameters:**
-- `app` - Hono application instance
-- `options.routesDir` - Directory containing route files (required)
-- `options.verbose` - Enable verbose logging (optional, default: false)
-
-**Returns:** `Promise<void>`
-
-### `HonoAdapter`
-
-The underlying adapter class. Use this for advanced customization:
-
-```typescript
-import { HonoAdapter } from '@fs-router/hono';
-import { createRouter } from '@fs-router/core';
-
-const adapter = new HonoAdapter(app);
-await createRouter(adapter, {
-  routesDir: './routes',
-  verbose: true
-});
 ```
 
 ## Examples
@@ -488,86 +150,136 @@ routes/
 │   ├── auth/
 │   │   ├── login.route.ts          # POST /api/auth/login
 │   │   ├── register.route.ts       # POST /api/auth/register
-│   │   └── refresh.route.ts        # POST /api/auth/refresh
+│   │   └── [...rest].middleware.ts # Middleware for /api/auth/* (all auth routes)
 │   ├── users/
-│   │   ├── route.ts                # GET,POST /api/users
-│   │   ├── [id].route.ts           # GET,PUT,DELETE /api/users/:id
-│   │   └── [id]/
-│   │       └── posts.route.ts      # GET,POST /api/users/:id/posts
-│   └── auth.[...rest].middleware.ts # Middleware for all /api/auth/* routes
-├── settings/
-│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
-├── webhooks/
-│   └── stripe.route.ts             # POST /webhooks/stripe
+│   │   ├── route.ts                # GET, POST /api/users
+│   │   └── [id].route.ts           # GET, PUT, DELETE /api/users/:id
+│   └── protected.middleware.ts     # Middleware for /api/protected only
 └── health.route.ts                 # GET /health
 ```
 
-### File Upload Route
+### Error Handling
 
 ```typescript
-// routes/upload.route.ts
-import type { Context } from 'hono';
+// routes/users/[id].route.ts
+import { HTTPException } from 'hono/http-exception';
+
+export const GET = async (c: Context) => {
+  try {
+    const user = await db.users.findById(c.req.param('id'));
+    
+    if (!user) {
+      throw new HTTPException(404, { message: 'User not found' });
+    }
+    
+    return c.json({ user });
+  } catch (error) {
+    if (error instanceof HTTPException) throw error;
+    throw new HTTPException(500, { message: 'Internal error' });
+  }
+};
+```
+
+### Catch-All Routes
+
+```typescript
+// routes/docs/[...path].route.ts
+export const GET = async (c: Context) => {
+  const path = c.req.param('path') || '';
+  return c.json({ documentation: `Docs for ${path}` });
+};
+```
+
+### Validation with Zod
+
+```typescript
+// routes/users.route.ts
+import { z } from 'zod';
+
+const userSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+});
 
 export const POST = async (c: Context) => {
   try {
-    const body = await c.req.parseBody();
-    const file = body.file as File;
-    
-    if (!file) {
-      return c.json({ error: 'No file uploaded' }, 400);
-    }
-    
-    // Process file
-    const buffer = await file.arrayBuffer();
-    const filename = `${Date.now()}-${file.name}`;
-    
-    // Save file logic here (depends on your environment)
-    await saveFile(filename, buffer);
-    
-    return c.json({
-      message: 'File uploaded successfully',
-      filename: file.name,
-      size: buffer.byteLength
-    });
+    const body = await c.req.json();
+    const data = userSchema.parse(body);
+    const user = await db.users.create(data);
+    return c.json({ user }, 201);
   } catch (error) {
-    console.error('Upload error:', error);
-    return c.json({ error: 'Upload failed' }, 500);
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Validation failed', details: error.errors }, 400);
+    }
+    throw error;
   }
 };
 ```
 
-### GraphQL Integration
+### Context Variables
 
 ```typescript
-// routes/graphql.route.ts
-import type { Context } from 'hono';
-import { graphqlServer } from '@hono/graphql-server';
-import { buildSchema } from 'graphql';
+// routes/protected/profile.route.ts
+type Variables = { user: { id: string; email: string } };
 
-const schema = buildSchema(`
-  type Query {
-    hello: String
-  }
-`);
-
-const rootValue = {
-  hello: () => 'Hello world!',
+export const GET = async (c: Context<{ Variables: Variables }>) => {
+  const user = c.get('user'); // Set by auth middleware
+  const profile = await db.profiles.findById(user.id);
+  return c.json({ profile });
 };
+```
 
-export const POST = graphqlServer({
-  schema,
-  rootValue,
-  graphiql: true, // Enable GraphiQL in development
-});
+## API Reference
 
-export const GET = graphqlServer({
-  schema,
-  rootValue,
-  graphiql: true,
+### `useFsRouter(app, options)`
+
+```typescript
+await useFsRouter(app, {
+  routesDir: string;   // Required: Path to routes directory
+  verbose?: boolean;   // Optional: Enable logging (default: false)
 });
 ```
 
-## Runtime-Specific Examples
+### `HonoAdapter`
+
+For advanced usage:
+
+```typescript
+import { HonoAdapter } from '@fs-router/hono';
+import { createRouter } from '@fs-router/core';
+
+const adapter = new HonoAdapter(app);
+await createRouter(adapter, {
+  routesDir: 'routes',
+  verbose: true
+});
+```
+
+## Integration with Hono Middleware
+
+```typescript
+import { Hono } from 'hono';
+import { logger } from 'hono/logger';
+import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
+import { useFsRouter } from '@fs-router/hono';
+
+const app = new Hono();
+
+// Global middleware
+app.use('*', logger());
+app.use('*', cors());
+app.use('*', secureHeaders());
+
+// File-based routes
+await useFsRouter(app, {
+  routesDir: 'routes'
+});
+
+export default app;
+```
+
+## Runtime Examples
 
 ### Cloudflare Workers
 
@@ -579,21 +291,19 @@ import { useFsRouter } from '@fs-router/hono';
 type Bindings = {
   DB: D1Database;
   BUCKET: R2Bucket;
-  API_KEY: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
 
 await useFsRouter(app, {
-  routesDir: './routes'
+  routesDir: 'routes'
 });
 
 export default app;
 
 // routes/api/data.route.ts
 export const GET = async (c: Context<{ Bindings: Bindings }>) => {
-  const db = c.env.DB;
-  const result = await db.prepare("SELECT * FROM users").all();
+  const result = await c.env.DB.prepare("SELECT * FROM users").all();
   return c.json(result);
 };
 ```
@@ -601,76 +311,45 @@ export const GET = async (c: Context<{ Bindings: Bindings }>) => {
 ### Deno Deploy
 
 ```typescript
-// main.ts
 import { Hono } from 'https://deno.land/x/hono/mod.ts';
 import { useFsRouter } from 'npm:@fs-router/hono';
 
 const app = new Hono();
 
 await useFsRouter(app, {
-  routesDir: './routes'
+  routesDir: 'routes'
 });
 
 Deno.serve(app.fetch);
 ```
 
-## Migration from Hono Routes
+## Migration Guide
 
 ### Before (Hono Routes)
 
 ```typescript
-const app = new Hono();
-
-app.get('/users', (c) => {
-  return c.json({ users: [] });
-});
-
-app.get('/users/:id', (c) => {
-  const id = c.req.param('id');
-  return c.json({ user: { id } });
-});
-
-app.post('/users', async (c) => {
-  const body = await c.req.json();
-  return c.json({ created: true, user: body });
-});
+app.get('/users', (c) => c.json({ users: [] }));
+app.get('/users/:id', (c) => c.json({ id: c.req.param('id') }));
 ```
 
 ### After (FS Router)
 
 ```typescript
 // routes/users.route.ts
-export const GET = (c) => {
-  return c.json({ users: [] });
-};
-
-export const POST = async (c) => {
-  const body = await c.req.json();
-  return c.json({ created: true, user: body });
-};
+export const GET = (c) => c.json({ users: [] });
 
 // routes/users/[id].route.ts
-export const GET = (c) => {
-  const id = c.req.param('id');
-  return c.json({ user: { id } });
-};
-
-// main.ts
-await useFsRouter(app, { routesDir: './routes' });
+export const GET = (c) => c.json({ id: c.req.param('id') });
 ```
-
-## Performance
-
-Hono is designed for maximum performance, and `@fs-router/hono` maintains this by:
-
-- Using Hono's native routing system
-- Zero runtime overhead for route registration
-- Compatible with all Hono optimizations
-- Works across all JavaScript runtimes
 
 ## Contributing
 
-This package is part of the Universal FS Router monorepo. Please see the [main repository](https://github.com/sib61/fs-router) for contribution guidelines.
+We welcome contributions! Please visit our [GitHub repository](https://github.com/sib61/fs-router) to:
+
+- 🐛 [Report bugs](https://github.com/sib61/fs-router/issues)
+- 💡 [Request features](https://github.com/sib61/fs-router/issues)
+- 🔧 [Submit pull requests](https://github.com/sib61/fs-router/pulls)
+- ⭐ Star the project if you find it useful!
 
 ## License
 

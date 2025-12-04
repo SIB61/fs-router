@@ -1,30 +1,27 @@
 # @fs-router/fastify
 
-File-based routing adapter for **Fastify**. Brings Next.js-style file-based routing to your Fastify applications with zero configuration and full TypeScript support.
+File-based routing for **Fastify** - brings Next.js-style routing conventions to Fastify with zero configuration.
 
 [![npm version](https://badge.fury.io/js/%40fs-router%2Ffastify.svg)](https://badge.fury.io/js/%40fs-router%2Ffastify)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-- 🚀 **Zero Configuration**: Works out of the box with Fastify
-- 📂 **File-System Based**: Define routes by creating files
-- 🛠️ **TypeScript Support**: Full TypeScript support with Fastify types
-- ⚡ **High Performance**: Built on Fastify's high-performance architecture
-- 🔌 **Middleware Support**: Easy middleware integration via `.middleware.ts` files
-- 🎯 **Fastify Native**: Uses Fastify's native routing under the hood
-- 🔄 **Async/Await**: Full support for async route handlers
+- 🚀 Zero Configuration
+- 📂 File-System Based Routes
+- 🛠️ Full TypeScript Support
+- ⚡ High Performance
+- 🔌 Automatic Middleware Detection
+- 🎯 Fastify Native Routing
+- 🔄 Full Async/Await Support
 
 ## Installation
 
 ```bash
-# npm
 npm install @fs-router/fastify
-
-# yarn
+# or
 yarn add @fs-router/fastify
-
-# pnpm
+# or
 pnpm add @fs-router/fastify
 ```
 
@@ -34,42 +31,29 @@ pnpm add @fs-router/fastify
 import Fastify from 'fastify';
 import { useFsRouter } from '@fs-router/fastify';
 
-const fastify = Fastify({
-  logger: true
-});
+const fastify = Fastify({ logger: true });
 
-// Set up file-based routing
 await useFsRouter(fastify, {
-  routesDir: './routes',
-  verbose: true // Optional: enable logging
+  routesDir: 'routes', // Use 'src/routes' if using src folder
+  verbose: true
 });
 
-// Start the server
-try {
-  await fastify.listen({ port: 3000, host: '0.0.0.0' });
-  console.log('Server running on http://localhost:3000');
-} catch (err) {
-  fastify.log.error(err);
-  process.exit(1);
-}
+await fastify.listen({ port: 3000 });
 ```
 
-## File-Based Routing
+## Route Conventions
 
-### Route Files
-
-Create route files in your `routes` directory:
+### File Structure to Routes
 
 | File Path | Fastify Route | Description |
 |-----------|---------------|-------------|
 | `route.ts` | `/` | Root route |
 | `users.route.ts` | `/users` | Simple route |
-| `users/route.ts` | `/users` | Alternative syntax |
 | `users/[id].route.ts` | `/users/:id` | Dynamic parameter |
 | `posts/[...slug].route.ts` | `/posts/*` | Catch-all route |
 | `api/v1/users.route.ts` | `/api/v1/users` | Nested route |
 
-### HTTP Methods
+### HTTP Method Handlers
 
 Export async functions named after HTTP methods:
 
@@ -77,91 +61,48 @@ Export async functions named after HTTP methods:
 // routes/users/[id].route.ts
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
-interface UserParams {
-  id: string;
-}
-
-interface UserBody {
-  name: string;
-  email: string;
-}
+interface Params { id: string }
+interface Body { name: string; email: string }
 
 export const GET = async (
-  request: FastifyRequest<{ Params: UserParams }>,
+  request: FastifyRequest<{ Params: Params }>,
   reply: FastifyReply
 ) => {
   const { id } = request.params;
-  
-  // Simulate database lookup
-  const user = await getUserById(id);
+  const user = await db.users.findById(id);
   
   if (!user) {
-    return reply.code(404).send({
-      error: 'User not found'
-    });
+    return reply.code(404).send({ error: 'Not found' });
   }
   
-  return {
-    id,
-    user,
-    message: `Getting user ${id}`
-  };
+  return { user };
 };
 
 export const POST = async (
-  request: FastifyRequest<{ Params: UserParams; Body: UserBody }>,
+  request: FastifyRequest<{ Params: Params; Body: Body }>,
   reply: FastifyReply
 ) => {
-  const { id } = request.params;
-  const userData = request.body;
-  
-  const createdUser = await createUser(id, userData);
-  
-  return reply.code(201).send({
-    id,
-    created: true,
-    user: createdUser
-  });
-};
-
-export const PUT = async (
-  request: FastifyRequest<{ Params: UserParams; Body: Partial<UserBody> }>,
-  reply: FastifyReply
-) => {
-  const { id } = request.params;
-  const updates = request.body;
-  
-  const updatedUser = await updateUser(id, updates);
-  
-  return {
-    id,
-    updated: true,
-    user: updatedUser
-  };
+  const user = await db.users.create(request.body);
+  return reply.code(201).send({ user });
 };
 
 export const DELETE = async (
-  request: FastifyRequest<{ Params: UserParams }>,
+  request: FastifyRequest<{ Params: Params }>,
   reply: FastifyReply
 ) => {
-  const { id } = request.params;
-  
-  await deleteUser(id);
-  
+  await db.users.delete(request.params.id);
   return reply.code(204).send();
 };
 
-// Handle any other HTTP method not explicitly defined
-export default async (request: FastifyRequest, reply: FastifyReply) => {
-  return reply.code(405).send({
-    error: `Method ${request.method} not allowed`
-  });
+// Fallback for other methods
+export default async (request, reply) => {
+  return reply.code(405).send({ error: 'Method not allowed' });
 };
 ```
 
-### Middleware
+### Middleware Files
 
-Create middleware files using the `.middleware.ts` suffix:
+Create middleware with `.middleware.ts` suffix:
 
 ```typescript
 // routes/auth.middleware.ts
@@ -171,375 +112,16 @@ export default async (request: FastifyRequest, reply: FastifyReply) => {
   const token = request.headers.authorization;
   
   if (!token) {
-    return reply.code(401).send({
-      error: 'No authorization token'
-    });
+    return reply.code(401).send({ error: 'Unauthorized' });
   }
   
   try {
-    // Validate token logic here
-    const decoded = await verifyToken(token.replace('Bearer ', ''));
-    request.user = decoded;
-    
-    console.log('Auth middleware passed');
+    const user = await verifyToken(token);
+    request.user = user;
   } catch (error) {
-    return reply.code(401).send({
-      error: 'Invalid token'
-    });
+    return reply.code(401).send({ error: 'Invalid token' });
   }
 };
-```
-
-```typescript
-// routes/api/rate-limit.middleware.ts
-import type { FastifyRequest, FastifyReply } from 'fastify';
-
-const requests = new Map();
-
-export default async (request: FastifyRequest, reply: FastifyReply) => {
-  const ip = request.ip;
-  const now = Date.now();
-  const windowMs = 60 * 1000; // 1 minute
-  const maxRequests = 100;
-  
-  if (!requests.has(ip)) {
-    requests.set(ip, { count: 1, resetTime: now + windowMs });
-    return;
-  }
-  
-  const clientRequests = requests.get(ip);
-  
-  if (now > clientRequests.resetTime) {
-    clientRequests.count = 1;
-    clientRequests.resetTime = now + windowMs;
-    return;
-  }
-  
-  if (clientRequests.count >= maxRequests) {
-    return reply.code(429).send({
-      error: 'Too many requests'
-    });
-  }
-  
-  clientRequests.count++;
-};
-```
-
-## Advanced Usage
-
-### With JSON Schema Validation
-
-```typescript
-// routes/users.route.ts
-import type { FastifyRequest, FastifyReply } from 'fastify';
-
-interface CreateUserBody {
-  name: string;
-  email: string;
-  age: number;
-}
-
-export const POST = async (
-  request: FastifyRequest<{ Body: CreateUserBody }>,
-  reply: FastifyReply
-) => {
-  // Add schema validation in your Fastify setup
-  const { name, email, age } = request.body;
-  
-  const user = await createUser({ name, email, age });
-  
-  return reply.code(201).send({
-    success: true,
-    user
-  });
-};
-
-// In your main server file, add schema:
-const userSchema = {
-  body: {
-    type: 'object',
-    required: ['name', 'email', 'age'],
-    properties: {
-      name: { type: 'string', minLength: 1 },
-      email: { type: 'string', format: 'email' },
-      age: { type: 'integer', minimum: 0 }
-    }
-  }
-};
-
-// This would be handled automatically by fs-router
-// fastify.post('/users', { schema: userSchema }, handler);
-```
-
-### Error Handling
-
-```typescript
-// routes/users/[id].route.ts
-import type { FastifyRequest, FastifyReply } from 'fastify';
-
-export const GET = async (
-  request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
-) => {
-  try {
-    const { id } = request.params;
-    
-    const user = await getUserById(id);
-    
-    if (!user) {
-      return reply.code(404).send({
-        error: 'User not found',
-        statusCode: 404
-      });
-    }
-    
-    return { user };
-  } catch (error) {
-    request.log.error(error);
-    
-    return reply.code(500).send({
-      error: 'Internal server error',
-      statusCode: 500
-    });
-  }
-};
-```
-
-### Using Fastify Hooks
-
-```typescript
-// routes/protected/profile.route.ts
-import type { FastifyRequest, FastifyReply } from 'fastify';
-
-interface AuthenticatedRequest extends FastifyRequest {
-  user?: {
-    id: string;
-    email: string;
-  };
-}
-
-export const GET = async (
-  request: AuthenticatedRequest,
-  reply: FastifyReply
-) => {
-  // User is already authenticated via middleware
-  const user = request.user;
-  
-  const profile = await getUserProfile(user.id);
-  
-  return {
-    profile
-  };
-};
-
-export const PATCH = async (
-  request: AuthenticatedRequest,
-  reply: FastifyReply
-) => {
-  const updates = request.body;
-  const userId = request.user.id;
-  
-  const updatedProfile = await updateUserProfile(userId, updates);
-  
-  return {
-    message: 'Profile updated',
-    profile: updatedProfile
-  };
-};
-```
-
-## Integration with Fastify Features
-
-### With Fastify Plugins
-
-```typescript
-import Fastify from 'fastify';
-import { useFsRouter } from '@fs-router/fastify';
-
-const fastify = Fastify({ logger: true });
-
-// Register plugins
-await fastify.register(import('@fastify/cors'), {
-  origin: true
-});
-
-await fastify.register(import('@fastify/helmet'));
-
-await fastify.register(import('@fastify/jwt'), {
-  secret: 'your-secret-key'
-});
-
-// File-based routes
-await useFsRouter(fastify, {
-  routesDir: './routes'
-});
-
-await fastify.listen({ port: 3000 });
-```
-
-### With Custom Context
-
-```typescript
-// types/fastify.d.ts
-declare module 'fastify' {
-  interface FastifyRequest {
-    user?: {
-      id: string;
-      email: string;
-    };
-  }
-}
-
-// routes/auth/login.route.ts
-export const POST = async (
-  request: FastifyRequest<{ Body: { email: string; password: string } }>,
-  reply: FastifyReply
-) => {
-  const { email, password } = request.body;
-  
-  const user = await authenticateUser(email, password);
-  
-  if (!user) {
-    return reply.code(401).send({
-      error: 'Invalid credentials'
-    });
-  }
-  
-  const token = fastify.jwt.sign({ 
-    id: user.id, 
-    email: user.email 
-  });
-  
-  return {
-    token,
-    user
-  };
-};
-```
-
-### With Fastify Multipart
-### Catch-All Routes
-
-```typescript
-// routes/settings/[...rest].route.ts
-import type { FastifyRequest, FastifyReply } from 'fastify';
-
-interface SettingsParams {
-  rest?: string;
-}
-
-export const GET = async (
-  request: FastifyRequest<{ Params: SettingsParams }>,
-  reply: FastifyReply
-) => {
-  const restPath = request.params.rest || '';
-  
-  // Handle different settings paths
-  if (restPath === 'profile') {
-    return {
-      setting: 'profile',
-      data: await getUserProfileSettings()
-    };
-  }
-  
-  if (restPath === 'notifications') {
-    return {
-      setting: 'notifications', 
-      data: await getNotificationSettings()
-    };
-  }
-  
-  // Default settings response
-  return {
-    path: `/settings/${restPath}`,
-    message: 'Settings endpoint',
-    availableSettings: ['profile', 'notifications', 'security']
-  };
-};
-
-export const POST = async (
-  request: FastifyRequest<{ Params: SettingsParams }>,
-  reply: FastifyReply
-) => {
-  const restPath = request.params.rest || '';
-  const updates = request.body;
-  
-  return {
-    message: `Updated settings for ${restPath}`,
-    updates
-  };
-};
-```
-
-### File Upload Route
-
-```typescript
-// routes/upload.route.ts
-import type { FastifyRequest, FastifyReply } from 'fastify';
-
-export const POST = async (
-  request: FastifyRequest,
-  reply: FastifyReply
-) => {
-  try {
-    // Register multipart in your main server:
-    // await fastify.register(import('@fastify/multipart'));
-    
-    const data = await request.file();
-    
-    if (!data) {
-      return reply.code(400).send({
-        error: 'No file uploaded'
-      });
-    }
-    
-    // Process file
-    const buffer = await data.toBuffer();
-    const filename = `${Date.now()}-${data.filename}`;
-    
-    // Save file logic here
-    await saveFile(filename, buffer);
-    
-    return {
-      message: 'File uploaded successfully',
-      filename: data.filename,
-      size: buffer.length
-    };
-  } catch (error) {
-    request.log.error(error);
-    return reply.code(500).send({
-      error: 'Upload failed'
-    });
-  }
-};
-```
-
-## API Reference
-
-### `useFsRouter(fastify, options)`
-
-Sets up file-based routing on a Fastify instance.
-
-**Parameters:**
-- `fastify` - Fastify instance
-- `options.routesDir` - Directory containing route files (required)
-- `options.verbose` - Enable verbose logging (optional, default: false)
-
-**Returns:** `Promise<void>`
-
-### `FastifyAdapter`
-
-The underlying adapter class. Use this for advanced customization:
-
-```typescript
-import { FastifyAdapter } from '@fs-router/fastify';
-import { createRouter } from '@fs-router/core';
-
-const adapter = new FastifyAdapter(fastify);
-await createRouter(adapter, {
-  routesDir: './routes',
-  verbose: true
-});
 ```
 
 ## Examples
@@ -552,97 +134,147 @@ routes/
 │   ├── auth/
 │   │   ├── login.route.ts          # POST /api/auth/login
 │   │   ├── register.route.ts       # POST /api/auth/register
-│   │   └── refresh.route.ts        # POST /api/auth/refresh
+│   │   └── [...rest].middleware.ts # Middleware for /api/auth/* (all auth routes)
 │   ├── users/
-│   │   ├── route.ts                # GET,POST /api/users
-│   │   ├── [id].route.ts           # GET,PUT,DELETE /api/users/:id
-│   │   └── [id]/
-│   │       └── posts.route.ts      # GET,POST /api/users/:id/posts
-│   └── auth.[...rest].middleware.ts # Middleware for all /api/auth/* routes
-├── settings/
-│   └── [...rest].route.ts          # GET,POST /settings/* (catch-all)
-├── webhooks/
-│   └── stripe.route.ts             # POST /webhooks/stripe
+│   │   ├── route.ts                # GET, POST /api/users
+│   │   └── [id].route.ts           # GET, PUT, DELETE /api/users/:id
+│   └── protected.middleware.ts     # Middleware for /api/protected only
 └── health.route.ts                 # GET /health
 ```
 
-### WebSocket Route (with Fastify WebSocket)
+### Error Handling
 
 ```typescript
-// routes/ws/chat.route.ts
-import type { FastifyRequest } from 'fastify';
-import type { WebSocket } from 'ws';
-
-// Note: You need to register @fastify/websocket plugin
-export const GET = async (request: FastifyRequest, socket: WebSocket) => {
-  socket.on('message', (message) => {
-    // Broadcast to all connected clients
-    socket.send(`Echo: ${message}`);
-  });
-  
-  socket.on('close', () => {
-    console.log('Client disconnected');
-  });
-  
-  socket.send('Welcome to chat!');
+// routes/users/[id].route.ts
+export const GET = async (request, reply) => {
+  try {
+    const user = await db.users.findById(request.params.id);
+    
+    if (!user) {
+      return reply.code(404).send({ error: 'User not found' });
+    }
+    
+    return { user };
+  } catch (error) {
+    request.log.error(error);
+    return reply.code(500).send({ error: 'Internal error' });
+  }
 };
 ```
 
-## Migration from Fastify Routes
+### Catch-All Routes
+
+```typescript
+// routes/docs/[...path].route.ts
+export const GET = async (request, reply) => {
+  const path = request.params['*'] || '';
+  return { documentation: `Docs for ${path}` };
+};
+```
+
+### Rate Limiting Middleware
+
+```typescript
+// routes/api/rate-limit.middleware.ts
+const requests = new Map();
+
+export default async (request, reply) => {
+  const ip = request.ip;
+  const limit = 100;
+  const window = 60000; // 1 minute
+  
+  const userRequests = requests.get(ip) || { count: 0, reset: Date.now() + window };
+  
+  if (Date.now() > userRequests.reset) {
+    userRequests.count = 0;
+    userRequests.reset = Date.now() + window;
+  }
+  
+  if (userRequests.count >= limit) {
+    return reply.code(429).send({ error: 'Too many requests' });
+  }
+  
+  userRequests.count++;
+  requests.set(ip, userRequests);
+};
+```
+
+## API Reference
+
+### `useFsRouter(fastify, options)`
+
+```typescript
+await useFsRouter(fastify, {
+  routesDir: string;   // Required: Path to routes directory
+  verbose?: boolean;   // Optional: Enable logging (default: false)
+});
+```
+
+### `FastifyAdapter`
+
+For advanced usage:
+
+```typescript
+import { FastifyAdapter } from '@fs-router/fastify';
+import { createRouter } from '@fs-router/core';
+
+const adapter = new FastifyAdapter(fastify);
+await createRouter(adapter, {
+  routesDir: 'routes',
+  verbose: true
+});
+```
+
+## Integration with Fastify Plugins
+
+```typescript
+import Fastify from 'fastify';
+import { useFsRouter } from '@fs-router/fastify';
+
+const fastify = Fastify({ logger: true });
+
+// Register plugins
+await fastify.register(import('@fastify/cors'));
+await fastify.register(import('@fastify/helmet'));
+await fastify.register(import('@fastify/jwt'), {
+  secret: process.env.JWT_SECRET
+});
+
+// File-based routes
+await useFsRouter(fastify, {
+  routesDir: 'routes'
+});
+
+await fastify.listen({ port: 3000 });
+```
+
+## Migration Guide
 
 ### Before (Fastify Routes)
 
 ```typescript
-fastify.get('/users', async (request, reply) => {
-  return { users: await getUsers() };
-});
-
-fastify.get('/users/:id', async (request, reply) => {
-  const { id } = request.params;
-  return { user: await getUserById(id) };
-});
-
-fastify.post('/users', async (request, reply) => {
-  const user = await createUser(request.body);
-  return reply.code(201).send({ user });
-});
+fastify.get('/users', async () => ({ users: [] }));
+fastify.get('/users/:id', async (request) => ({ id: request.params.id }));
 ```
 
 ### After (FS Router)
 
 ```typescript
 // routes/users.route.ts
-export const GET = async () => {
-  return { users: await getUsers() };
-};
-
-export const POST = async (request, reply) => {
-  const user = await createUser(request.body);
-  return reply.code(201).send({ user });
-};
+export const GET = async () => ({ users: [] });
 
 // routes/users/[id].route.ts
-export const GET = async (request) => {
-  const { id } = request.params;
-  return { user: await getUserById(id) };
-};
-
-// main.ts
-await useFsRouter(fastify, { routesDir: './routes' });
+export const GET = async (request) => ({ id: request.params.id });
 ```
-
-## Performance Considerations
-
-Fastify is designed for high performance, and `@fs-router/fastify` maintains this by:
-
-- Using Fastify's native routing system
-- Supporting async/await throughout
-- Minimal overhead in route registration
-- Compatible with Fastify's built-in validation and serialization
 
 ## Contributing
 
-This package is part of the Universal FS Router monorepo. Please see the [main repository](https://github.com/sib61/fs-router) for contribution guidelines.
+We welcome contributions! Please visit our [GitHub repository](https://github.com/sib61/fs-router) to:
+
+- 🐛 [Report bugs](https://github.com/sib61/fs-router/issues)
+- 💡 [Request features](https://github.com/sib61/fs-router/issues)
+- 🔧 [Submit pull requests](https://github.com/sib61/fs-router/pulls)
+- ⭐ Star the project if you find it useful!
 
 ## License
 

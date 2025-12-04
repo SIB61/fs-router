@@ -11,7 +11,10 @@
     "test:express": "pnpm --filter test-express dev",
     "test:hono": "pnpm --filter test-hono dev",
     "test:fastify": "pnpm --filter test-fastify dev",
-    "test:koa": "pnpm --filter test-koa dev"
+    "test:koa": "pnpm --filter test-koa dev",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "keywords": [
     "routing",
@@ -24,6 +27,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "typescript": "^5.7.2"
   },
   "pnpm": {
